@@ -75,7 +75,23 @@ export default function Login() {
               variant="outline"
               className="w-full"
               disabled={loading}
-              onClick={() => { setToken('dev'); location.href = '/dashboard' }}
+              onClick={async () => {
+                try {
+                  setLoading(true)
+                  setError('')
+                  const data = await apiFetch<{ token: string }>(`/api/auth/google`, {
+                    method: 'POST',
+                    body: JSON.stringify({ idToken: 'dev' }),
+                  })
+                  if (!data?.token) throw new Error('Dev login failed')
+                  setToken(data.token)
+                  location.href = '/dashboard'
+                } catch (e: any) {
+                  setError(e?.message || 'Dev login failed')
+                } finally {
+                  setLoading(false)
+                }
+              }}
               title="Use when AUTH_DISABLED=true on server"
             >
               Continue without Google (dev)
