@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Card, { CardContent } from '../components/ui/Card'
@@ -19,6 +19,14 @@ import { apiFetch } from '../api'
 export default function Landing() {
   const navigate = useNavigate()
   const { setToken } = useAuth()
+  const [metrics, setMetrics] = useState<null | {
+    since: string | null
+    customers: number
+    campaigns: number
+    ordersLast30Days: number
+    commsLast30Days: { sentLike: number; failedLike: number }
+  }>(null)
+  const [metricsError, setMetricsError] = useState<string | null>(null)
 
   useEffect(() => {
     const s = document.createElement('script')
@@ -53,6 +61,19 @@ export default function Landing() {
     document.body.appendChild(s)
     return () => { document.body.removeChild(s) }
   }, [setToken])
+
+  useEffect(() => {
+    let mounted = true
+    ;(async () => {
+      try {
+        const data = await apiFetch<any>('/api/public/metrics')
+        if (mounted) setMetrics(data)
+      } catch (err: any) {
+        if (mounted) setMetricsError(err?.message || 'Failed to load metrics')
+      }
+    })()
+    return () => { mounted = false }
+  }, [])
 
   const features = [
     { icon: Users, title: 'Customer Segmentation', description: 'Create smart customer segments with our intuitive drag-and-drop builder' },
@@ -108,6 +129,57 @@ export default function Landing() {
       </section>
 
       <section className="container mx-auto px-4 py-20">
+        {metrics && (
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Customers</p>
+                    <p className="text-2xl font-semibold">{metrics.customers.toLocaleString()}</p>
+                  </div>
+                  <Users className="w-6 h-6 text-blue-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Orders (30d)</p>
+                    <p className="text-2xl font-semibold">{metrics.ordersLast30Days.toLocaleString()}</p>
+                  </div>
+                  <BarChart3 className="w-6 h-6 text-green-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Comms Sent-like (30d)</p>
+                    <p className="text-2xl font-semibold">{metrics.commsLast30Days.sentLike.toLocaleString()}</p>
+                  </div>
+                  <CheckCircle className="w-6 h-6 text-emerald-600" />
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-gray-500">Comms Failed (30d)</p>
+                    <p className="text-2xl font-semibold">{metrics.commsLast30Days.failedLike.toLocaleString()}</p>
+                  </div>
+                  <Zap className="w-6 h-6 text-red-600" />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+        {metricsError && (
+          <div className="mb-6 text-sm text-red-600">{metricsError}</div>
+        )}
         <div className="text-center mb-16">
           <h2 className="text-3xl font-bold mb-4">Everything you need to succeed</h2>
           <p className="text-gray-600 max-w-2xl mx-auto">Powerful tools designed to help you understand your customers better and create campaigns that convert.</p>

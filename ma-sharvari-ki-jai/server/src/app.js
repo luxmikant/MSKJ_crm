@@ -72,6 +72,8 @@ app.use('/api/segments', requireAuth, require('./routes/segmentRoutes'));
 app.use('/api/dashboard', requireAuth, require('./routes/dashboardRoutes'));
 app.use('/api/templates', require('./routes/templateRoutes'));
 app.use('/api/ai', require('./routes/aiRoutes'));
+// Public, unauthenticated routes
+app.use('/api/public', require('./routes/publicRoutes'));
 
 // Error handler middleware
 app.use(errorHandler);
