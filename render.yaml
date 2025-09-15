@@ -33,7 +33,7 @@ services:
     name: mskj-crm-client
     rootDir: ma-sharvari-ki-jai/client
     buildCommand: npm install && npm run build
-    staticPublishPath: dist
+    staticPublishPath: build
     headers:
       - path: /assets/*
         name: Cache-Control
