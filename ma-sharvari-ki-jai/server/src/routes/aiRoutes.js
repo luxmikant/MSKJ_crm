@@ -7,8 +7,16 @@ const { suggestMessage, generateEmail } = require('../services/ai');
 router.post('/suggest-message', requireAuth, asyncHandler(async (req, res) => {
   const { goal, brand, tone, channel, segmentSummary, variables } = req.body || {};
   if (!goal) return res.status(400).json({ message: 'goal is required' });
-  const variants = await suggestMessage({ goal, brand, tone, channel, segmentSummary, variables });
-  res.json({ variants });
+  try {
+    const variants = await suggestMessage({ goal, brand, tone, channel, segmentSummary, variables });
+    return res.json({ variants, usedAI: !!(process.env.GOOGLE_API_KEY || process.env.GEMINI_API_KEY || process.env.OPENAI_API_KEY) });
+  } catch (e) {
+    return res.json({ variants: [
+      `${goal} — quick idea 1`,
+      `${goal} — quick idea 2`,
+      `${goal} — quick idea 3`
+    ], usedAI: false, note: 'AI key missing or failed; returning simple suggestions.' });
+  }
 }));
 
 module.exports = router;

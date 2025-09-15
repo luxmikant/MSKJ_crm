@@ -2,6 +2,7 @@ const Segment = require('../models/Segment');
 const Customer = require('../models/Customer');
 const asyncHandler = require('../utils/asyncHandler');
 const { suggestMessage } = require('../services/ai');
+const logger = require('../utils/logger');
 
 // ruleTree format example:
 // { condition: 'AND', rules: [ { field: 'totalSpend', operator: '>', value: 10000 }, { condition: 'OR', rules: [...] } ] }
@@ -127,13 +128,21 @@ exports.previewSegment = asyncHandler(async (req, res) => {
 
 exports.listSegments = asyncHandler(async (req, res) => {
   const mongoose = require('mongoose');
-  if (mongoose.connection.readyState !== 1) {
-    return res.json({ items: [] });
+  try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ items: [] });
+    }
+    const owner = req.user && (req.user._id || req.user.sub);
+    const q = owner ? { createdBy: owner } : {};
+    const items = await Segment.find(q).sort({ createdAt: -1 }).limit(50);
+    return res.json({ items });
+  } catch (err) {
+    logger.error('Failed to list segments', { err });
+    if (process.env.AUTH_DISABLED === 'true' || process.env.NO_DB_OK === 'true' || process.env.NODE_ENV !== 'production') {
+      return res.json({ items: [] });
+    }
+    throw err;
   }
-  const owner = req.user && (req.user._id || req.user.sub);
-  const q = owner ? { createdBy: owner } : {};
-  const items = await Segment.find(q).sort({ createdAt: -1 }).limit(50);
-  res.json({ items });
 });
 
 // export for tests

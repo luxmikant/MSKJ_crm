@@ -1,4 +1,5 @@
 import React, { useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
 import Button from '../components/ui/Button'
 import Card, { CardContent } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -16,6 +17,7 @@ import { useAuth } from '../state/AuthContext'
 import { apiFetch } from '../api'
 
 export default function Landing() {
+  const navigate = useNavigate()
   const { setToken } = useAuth()
 
   useEffect(() => {
@@ -38,7 +40,7 @@ export default function Landing() {
             })
             if (data?.token) {
               setToken(data.token)
-              location.href = '/dashboard'
+              navigate('/dashboard')
             }
           } catch (e) {
             // no-op
@@ -84,7 +86,7 @@ export default function Landing() {
           </div>
           <div className="flex items-center gap-2">
             <div id="google-btn" className="hidden sm:flex" />
-            <Button variant="outline" onClick={() => (location.href = '/login')}>Sign In</Button>
+            <Button variant="outline" onClick={() => navigate('/login')}>Sign In</Button>
           </div>
         </nav>
       </header>
@@ -94,7 +96,7 @@ export default function Landing() {
         <h1 className="text-5xl font-bold mb-6 bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">Build Better Customer<br />Relationships</h1>
         <p className="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">The modern CRM that combines powerful segmentation, intuitive campaign building, and actionable insights to grow your business faster.</p>
         <div className="flex flex-col sm:flex-row gap-4 justify-center">
-          <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => (location.href = '/login')}>
+          <Button size="lg" className="bg-blue-600 hover:bg-blue-700" onClick={() => navigate('/login')}>
             Get Started Free
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
@@ -138,7 +140,7 @@ export default function Landing() {
                   </div>
                 ))}
               </div>
-              <Button className="mt-8 bg-green-600 hover:bg-green-700" onClick={() => (location.href = '/login')}>
+              <Button className="mt-8 bg-green-600 hover:bg-green-700" onClick={() => navigate('/login')}>
                 Start Building Today
               </Button>
             </div>
@@ -182,7 +184,7 @@ export default function Landing() {
         <div className="container mx-auto px-4 text-center text-white">
           <h2 className="text-3xl font-bold mb-4">Ready to transform your business?</h2>
           <p className="text-xl mb-8 opacity-90">Join thousands of businesses using SMKJ CRM to grow faster</p>
-          <Button size="lg" variant="secondary" onClick={() => (location.href = '/login')} className="bg-white text-blue-600 hover:bg-gray-100">
+          <Button size="lg" variant="secondary" onClick={() => navigate('/login')} className="bg-white text-blue-600 hover:bg-gray-100">
             Get Started Free Today
             <ArrowRight className="w-4 h-4 ml-2" />
           </Button>
@@ -230,7 +232,7 @@ export default function Landing() {
             </div>
           </div>
           <div className="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
-            <p>&copy; 2024 SMKJ CRM. All rights reserved.</p>
+            <p>&copy; 2025 SMKJ CRM. All rights reserved.</p>
           </div>
         </div>
       </footer>

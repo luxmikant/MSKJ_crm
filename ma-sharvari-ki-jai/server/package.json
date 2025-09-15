@@ -8,11 +8,15 @@
     "dev": "nodemon src/index.js",
     "test": "jest",
     "seed": "node src/scripts/seedCustomers.js",
-    "seed:demo": "node src/scripts/seedDemoData.js"
+  "seed:demo": "node src/scripts/seedDemoData.js",
+  "seed:30d": "node src/scripts/seedLast30Days.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "engines": {
+    "node": ">=18.0.0"
+  },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
     "cookie-parser": "^1.4.7",

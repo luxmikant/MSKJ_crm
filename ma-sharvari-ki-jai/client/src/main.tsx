@@ -13,6 +13,7 @@ import Button from './components/ui/Button'
 import Dashboard from './pages/Dashboard'
 import Insights from './pages/Insights'
 import CustomerProfile from './pages/CustomerProfile'
+import Debug from './pages/Debug'
 import { CampaignBuilder } from './components/CampaignBuilder'
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -72,13 +73,14 @@ const router = createBrowserRouter([
   { path: '/orders', element: <Protected><AppLayout><Orders /></AppLayout></Protected> },
   { path: '/insights', element: <Protected><AppLayout><Insights /></AppLayout></Protected> },
   { path: '/insights/*', element: <Protected><AppLayout><Insights /></AppLayout></Protected> },
+  { path: '/debug', element: <Debug /> },
   { path: '*', element: <Navigate to="/" replace /> },
 ])
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <AuthProvider>
-      <RouterProvider router={router} />
+      <RouterProvider router={router} future={{ v7_startTransition: true }} />
     </AuthProvider>
   </React.StrictMode>
 )

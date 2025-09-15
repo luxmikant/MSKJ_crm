@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 import Button from '../components/ui/Button'
 import { ShieldCheck } from 'lucide-react'
@@ -11,11 +12,24 @@ declare global {
 }
 
 export default function Login() {
+  const navigate = useNavigate()
   const { setToken } = useAuth()
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
+    // Handle redirect from OAuth code flow
+    try {
+      const u = new URL(window.location.href)
+      const authToken = u.searchParams.get('authToken')
+      if (authToken) {
+        setToken(authToken)
+        window.history.replaceState({}, '', u.pathname)
+        navigate('/dashboard')
+        return
+      }
+    } catch {}
+
     const s = document.createElement('script')
     s.src = 'https://accounts.google.com/gsi/client'
     s.async = true
@@ -32,9 +46,9 @@ export default function Login() {
               method: 'POST',
               body: JSON.stringify({ idToken }),
             })
-            if (!data?.token) throw new Error('Login failed')
+            if (!data?.token) throw new Error('No token received from server')
             setToken(data.token)
-            location.href = '/dashboard'
+            navigate('/dashboard')
           } catch (e: any) {
             setError(e?.message || 'Login failed')
           } finally {
@@ -46,7 +60,7 @@ export default function Login() {
     }
     document.body.appendChild(s)
     return () => { document.body.removeChild(s) }
-  }, [setToken])
+  }, [setToken, navigate])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-emerald-50 flex items-center justify-center p-6">
@@ -60,7 +74,23 @@ export default function Login() {
           <h1 className="text-2xl font-semibold text-center mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Welcome back</h1>
           <p className="text-center text-gray-600 mb-6">Sign in to continue to your dashboard</p>
 
-          {error && <div className="mb-4 text-sm text-red-600 text-center">{error}</div>}
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded">
+              <strong>Error:</strong> {error}
+              <div className="mt-2 text-xs">
+                <a href="/debug" className="text-blue-600 hover:underline">Go to debug page</a> to troubleshoot connection issues.
+              </div>
+            </div>
+          )}
+
+          <div className="mb-4 p-3 text-xs text-gray-500 bg-gray-50 border rounded">
+            <strong>Debug Info:</strong><br />
+            API Base: {API_BASE || 'localhost (development)'}<br />
+            Google Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'Set' : 'Not set'}
+            <div className="mt-2">
+              <a href="/debug" className="text-blue-600 hover:underline">View detailed connection status</a>
+            </div>
+          </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-center">
@@ -85,7 +115,7 @@ export default function Login() {
                   })
                   if (!data?.token) throw new Error('Dev login failed')
                   setToken(data.token)
-                  location.href = '/dashboard'
+                  navigate('/dashboard')
                 } catch (e: any) {
                   setError(e?.message || 'Dev login failed')
                 } finally {
@@ -95,6 +125,26 @@ export default function Login() {
               title="Use when AUTH_DISABLED=true on server"
             >
               Continue without Google (dev)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-2"
+              disabled={loading}
+              onClick={async () => {
+                try {
+                  setLoading(true)
+                  setError('')
+                  const data = await apiFetch<any>(`/api/auth/debug`)
+                  setError(`Connection OK: ${JSON.stringify(data)}`)
+                } catch (e: any) {
+                  setError(`Connection failed: ${e.message}`)
+                } finally {
+                  setLoading(false)
+                }
+              }}
+            >
+              Test API Connection
             </Button>
           </div>
           <div className="mt-6 text-center text-xs text-gray-400">
