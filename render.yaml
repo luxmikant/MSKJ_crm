@@ -17,6 +17,12 @@ services:
         generateValue: true
       - key: CORS_ORIGIN
         sync: false
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: GOOGLE_REDIRECT_URI
+        sync: false
       - key: AUTH_DISABLED
         sync: false
       - key: NO_DB_OK

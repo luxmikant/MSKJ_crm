@@ -63,3 +63,58 @@ exports.logout = asyncHandler(async (req, res) => {
   res.clearCookie('token');
   res.json({ ok: true });
 });
+
+// OAuth 2.0 Authorization Code flow (optional)
+function getOAuthClient() {
+  const clientId = process.env.GOOGLE_CLIENT_ID;
+  const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
+  const base = process.env.GOOGLE_REDIRECT_URI_BASE || process.env.RENDER_EXTERNAL_URL || '';
+  const redirectUri = process.env.GOOGLE_REDIRECT_URI || (base ? `${base.replace(/\/$/, '')}/api/auth/google/callback` : undefined);
+  if (!clientId || !clientSecret || !redirectUri) return null;
+  return new OAuth2Client(clientId, clientSecret, redirectUri);
+}
+
+exports.googleAuthStart = asyncHandler(async (req, res) => {
+  const oc = getOAuthClient();
+  if (!oc) return res.status(500).send('Google OAuth is not configured. Set GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET and GOOGLE_REDIRECT_URI or RENDER_EXTERNAL_URL.');
+  const url = oc.generateAuthUrl({
+    access_type: 'offline',
+    prompt: 'consent',
+    scope: ['openid', 'email', 'profile'],
+  });
+  res.redirect(url);
+});
+
+exports.googleCallback = asyncHandler(async (req, res) => {
+  const code = req.query.code;
+  const oc = getOAuthClient();
+  if (!oc) return res.status(500).send('Google OAuth is not configured.');
+  if (!code) return res.status(400).send('Missing authorization code. Start at /api/auth/google/start');
+  try {
+    const { tokens } = await oc.getToken(code);
+    // Prefer id_token from tokens
+    const idToken = tokens.id_token;
+    if (!idToken) return res.status(400).send('No ID token received from Google.');
+    const ticket = await oc.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    const payload = ticket.getPayload();
+    const email = payload.email?.toLowerCase();
+    if (!email) return res.status(400).send('Invalid Google token');
+    const update = {
+      googleId: payload.sub,
+      email,
+      name: payload.name || email,
+      picture: payload.picture,
+    };
+    const user = await User.findOneAndUpdate({ email }, { $set: update }, { upsert: true, new: true });
+    const token = sign(user);
+
+    const destBase = process.env.FRONTEND_ORIGIN || '';
+    if (destBase) {
+      const redirectTo = `${destBase.replace(/\/$/, '')}/login?authToken=${encodeURIComponent(token)}`;
+      return res.redirect(redirectTo);
+    }
+    return res.json({ token, user: { id: user._id, email: user.email, name: user.name, picture: user.picture } });
+  } catch (e) {
+    return res.status(400).send(`Google callback error: ${e?.message || e}`);
+  }
+});
