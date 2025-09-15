@@ -16,3 +16,5 @@ export default {
     outDir: 'build', // Change from 'dist' to 'build'
   },
 };
+//changed
+
