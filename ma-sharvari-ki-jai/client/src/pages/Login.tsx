@@ -81,6 +81,9 @@ export default function Login() {
           {error && (
             <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded">
               <strong>Error:</strong> {error}
+              <div className="mt-2 text-xs">
+                <a href="/debug" className="text-blue-600 hover:underline">Go to debug page</a> to troubleshoot connection issues.
+              </div>
             </div>
           )}
 
@@ -88,6 +91,9 @@ export default function Login() {
             <strong>Debug Info:</strong><br />
             API Base: {API_BASE || 'localhost (development)'}<br />
             Google Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'Set' : 'Not set'}
+            <div className="mt-2">
+              <a href="/debug" className="text-blue-600 hover:underline">View detailed connection status</a>
+            </div>
           </div>
 
           <div className="space-y-3">

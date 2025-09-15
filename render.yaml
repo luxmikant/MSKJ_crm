@@ -16,7 +16,9 @@ services:
       - key: JWT_SECRET
         generateValue: true
       - key: CORS_ORIGIN
-        sync: false
+        value: "https://mskj-crm-client.onrender.com,https://crm-frontend-d53h.onrender.com"
+        # Make sure this includes ALL your frontend URLs
+        # sync: false
       - key: GOOGLE_CLIENT_ID
         sync: false
       - key: GOOGLE_CLIENT_SECRET
@@ -46,5 +48,7 @@ services:
           type: web
           name: mskj-crm-server
           envVarKey: RENDER_EXTERNAL_URL
+        # Ensure this is correctly set to the server's external URL
+        # Example: https://mskj-crm-server.onrender.com
       - key: VITE_GOOGLE_CLIENT_ID
         sync: false
