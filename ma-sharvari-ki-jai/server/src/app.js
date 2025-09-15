@@ -1,4 +1,4 @@
-require('dotenv').config();
+require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -49,6 +49,9 @@ app.use(morgan('dev'));
 app.get('/', (req, res) => {
   res.json({ message: 'Welcome to Ma Sharvari Ki Jai CRM API' });
 });
+
+// Quiet favicon requests to avoid 404 noise
+app.get('/favicon.ico', (req, res) => res.status(204).end());
 
 // Swagger docs
 try {

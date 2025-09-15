@@ -24,8 +24,18 @@ exports.googleLogin = asyncHandler(async (req, res) => {
     return res.json({ token, user: { id: user._id, email: user.email, name: user.name } });
   }
 
-  const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
-  const payload = ticket.getPayload();
+  // Quick format guard: Google ID tokens are JWTs with 3 segments
+  if (typeof idToken !== 'string' || idToken.split('.').length !== 3) {
+    return res.status(400).json({ message: 'Invalid Google token format' });
+  }
+
+  let payload;
+  try {
+    const ticket = await client.verifyIdToken({ idToken, audience: process.env.GOOGLE_CLIENT_ID });
+    payload = ticket.getPayload();
+  } catch (e) {
+    return res.status(400).json({ message: 'Invalid Google token', details: e?.message || String(e) });
+  }
   const email = payload.email?.toLowerCase();
   if (!email) return res.status(400).json({ message: 'Invalid Google token' });
 
@@ -39,7 +49,8 @@ exports.googleLogin = asyncHandler(async (req, res) => {
   const token = sign(user);
 
   if (req.query.cookie === 'true') {
-    res.cookie('token', token, { httpOnly: true, secure: false, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
+    const prod = process.env.NODE_ENV === 'production';
+    res.cookie('token', token, { httpOnly: true, secure: prod, sameSite: 'lax', maxAge: 7 * 24 * 60 * 60 * 1000 });
   }
   res.json({ token, user: { id: user._id, email: user.email, name: user.name, picture: user.picture } });
 });
