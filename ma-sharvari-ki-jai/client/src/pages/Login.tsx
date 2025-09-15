@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../state/AuthContext'
 import Button from '../components/ui/Button'
 import { ShieldCheck } from 'lucide-react'
@@ -11,6 +12,7 @@ declare global {
 }
 
 export default function Login() {
+  const navigate = useNavigate()
   const { setToken } = useAuth()
   const [error, setError] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
@@ -23,7 +25,7 @@ export default function Login() {
       if (authToken) {
         setToken(authToken)
         window.history.replaceState({}, '', u.pathname)
-        location.href = '/dashboard'
+        navigate('/dashboard')
         return
       }
     } catch {}
@@ -46,7 +48,7 @@ export default function Login() {
             })
             if (!data?.token) throw new Error('Login failed')
             setToken(data.token)
-            location.href = '/dashboard'
+            navigate('/dashboard')
           } catch (e: any) {
             setError(e?.message || 'Login failed')
           } finally {
@@ -97,7 +99,7 @@ export default function Login() {
                   })
                   if (!data?.token) throw new Error('Dev login failed')
                   setToken(data.token)
-                  location.href = '/dashboard'
+                  navigate('/dashboard')
                 } catch (e: any) {
                   setError(e?.message || 'Dev login failed')
                 } finally {

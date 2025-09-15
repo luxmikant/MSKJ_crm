@@ -36,6 +36,23 @@ Frontend (Static Site):
   - No redirect URIs needed for Google Identity Services One Tap/button.
 - Put the Client ID into `VITE_GOOGLE_CLIENT_ID`.
 
+### Troubleshooting Deployment Issues
+
+**404 Error on /dashboard after login:**
+- ✅ Fixed: All redirects now use React Router's `navigate()` instead of `location.href`
+- ✅ Fixed: `render.yaml` includes proper SPA rewrite rule (`/* → /index.html`)
+- Ensure your static site is properly deployed and the rewrite rule is active
+
+**API calls failing in production:**
+- Check that `VITE_API_BASE_URL` is properly set (auto-configured in render.yaml)
+- Verify `CORS_ORIGIN` on server includes your frontend domain
+- Check browser Network tab for actual API URLs being called
+
+**Google OAuth issues:**
+- Ensure JavaScript origins match your exact frontend URL (no trailing slash)
+- Check `VITE_GOOGLE_CLIENT_ID` is set correctly
+- Verify Google credentials are for a "Web application" type
+
 ### Local Development
 ```cmd
 :: terminal 1 (server)
