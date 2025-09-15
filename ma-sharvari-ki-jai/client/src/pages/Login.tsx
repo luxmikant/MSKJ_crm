@@ -16,6 +16,18 @@ export default function Login() {
   const [loading, setLoading] = useState<boolean>(false)
 
   useEffect(() => {
+    // Handle redirect from OAuth code flow
+    try {
+      const u = new URL(window.location.href)
+      const authToken = u.searchParams.get('authToken')
+      if (authToken) {
+        setToken(authToken)
+        window.history.replaceState({}, '', u.pathname)
+        location.href = '/dashboard'
+        return
+      }
+    } catch {}
+
     const s = document.createElement('script')
     s.src = 'https://accounts.google.com/gsi/client'
     s.async = true
