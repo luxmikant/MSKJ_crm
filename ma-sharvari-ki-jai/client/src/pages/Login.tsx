@@ -41,15 +41,19 @@ export default function Login() {
           try {
             setLoading(true)
             setError('')
+            console.log('Google login response:', response)
             const idToken = response.credential
+            console.log('Sending request to:', `/api/auth/google`, 'with token:', idToken?.substring(0, 20) + '...')
             const data = await apiFetch<{ token: string }>(`/api/auth/google`, {
               method: 'POST',
               body: JSON.stringify({ idToken }),
             })
-            if (!data?.token) throw new Error('Login failed')
+            console.log('Login response:', data)
+            if (!data?.token) throw new Error('No token received from server')
             setToken(data.token)
             navigate('/dashboard')
           } catch (e: any) {
+            console.error('Login error:', e)
             setError(e?.message || 'Login failed')
           } finally {
             setLoading(false)
@@ -74,7 +78,17 @@ export default function Login() {
           <h1 className="text-2xl font-semibold text-center mb-2 bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">Welcome back</h1>
           <p className="text-center text-gray-600 mb-6">Sign in to continue to your dashboard</p>
 
-          {error && <div className="mb-4 text-sm text-red-600 text-center">{error}</div>}
+          {error && (
+            <div className="mb-4 p-3 text-sm text-red-600 bg-red-50 border border-red-200 rounded">
+              <strong>Error:</strong> {error}
+            </div>
+          )}
+
+          <div className="mb-4 p-3 text-xs text-gray-500 bg-gray-50 border rounded">
+            <strong>Debug Info:</strong><br />
+            API Base: {API_BASE || 'localhost (development)'}<br />
+            Google Client ID: {import.meta.env.VITE_GOOGLE_CLIENT_ID ? 'Set' : 'Not set'}
+          </div>
 
           <div className="space-y-3">
             <div className="flex items-center justify-center">
@@ -93,14 +107,18 @@ export default function Login() {
                 try {
                   setLoading(true)
                   setError('')
+                  console.log('Dev login - API Base:', API_BASE)
+                  console.log('Sending dev login request to:', `/api/auth/google`)
                   const data = await apiFetch<{ token: string }>(`/api/auth/google`, {
                     method: 'POST',
                     body: JSON.stringify({ idToken: 'dev' }),
                   })
-                  if (!data?.token) throw new Error('Dev login failed')
+                  console.log('Dev login response:', data)
+                  if (!data?.token) throw new Error('No token received from dev login')
                   setToken(data.token)
                   navigate('/dashboard')
                 } catch (e: any) {
+                  console.error('Dev login error:', e)
                   setError(e?.message || 'Dev login failed')
                 } finally {
                   setLoading(false)
@@ -109,6 +127,26 @@ export default function Login() {
               title="Use when AUTH_DISABLED=true on server"
             >
               Continue without Google (dev)
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="w-full mt-2"
+              disabled={loading}
+              onClick={async () => {
+                try {
+                  setLoading(true)
+                  setError('')
+                  const data = await apiFetch<any>(`/api/auth/debug`)
+                  setError(`Connection OK: ${JSON.stringify(data)}`)
+                } catch (e: any) {
+                  setError(`Connection failed: ${e.message}`)
+                } finally {
+                  setLoading(false)
+                }
+              }}
+            >
+              Test API Connection
             </Button>
           </div>
           <div className="mt-6 text-center text-xs text-gray-400">

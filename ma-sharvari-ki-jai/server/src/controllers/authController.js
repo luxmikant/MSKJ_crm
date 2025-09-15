@@ -64,6 +64,20 @@ exports.logout = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+// Debug endpoint to test auth routes
+exports.debug = asyncHandler(async (req, res) => {
+  res.json({ 
+    message: 'Auth routes are working',
+    timestamp: new Date().toISOString(),
+    env: {
+      hasJwtSecret: !!process.env.JWT_SECRET,
+      hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
+      authDisabled: process.env.AUTH_DISABLED,
+      nodeEnv: process.env.NODE_ENV
+    }
+  });
+});
+
 // OAuth 2.0 Authorization Code flow (optional)
 function getOAuthClient() {
   const clientId = process.env.GOOGLE_CLIENT_ID;
