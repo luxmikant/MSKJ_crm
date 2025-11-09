@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: Ma Sharvari Ki Jai CRM API
-  version: 0.2.0
+  version: 0.3.0
 servers:
   - url: http://localhost:5000
 components:
@@ -13,7 +13,7 @@ components:
   schemas:
     Customer:
       type: object
-      required: [name, email]
+      required: [name, email, externalCustomerId]
       properties:
         name: { type: string }
         email: { type: string, format: email }
@@ -157,6 +157,100 @@ paths:
           schema: { type: integer, minimum: 1, maximum: 100 }
       responses:
         '200': { description: OK }
+  /api/customers/import:
+    post:
+      summary: Import customers from CSV file
+      security: [ { bearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: CSV file with customer data (max 5MB)
+      description: |
+        Upload a CSV file to bulk import customers. Required columns: externalCustomerId, name, email.
+        Optional columns: phone, totalSpend, visitCount, lastOrderDate, tags (semicolon-separated), attributes (JSON).
+        Import is idempotent - re-uploading the same data will update existing customers.
+      responses:
+        '201':
+          description: Import successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  upserted: { type: integer, description: Number of new customers created }
+                  modified: { type: integer, description: Number of existing customers updated }
+                  matched: { type: integer, description: Number of customers matched }
+        '400':
+          description: Import failed due to validation errors
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success: { type: boolean }
+                  error: 
+                    type: object
+                    properties:
+                      code: { type: string, enum: [NO_FILE, EMPTY_CSV, MISSING_HEADERS, CSV_PARSE_ERROR, VALIDATION_ERROR] }
+                      message: { type: string }
+                  details: { type: array, items: { type: object } }
+  /api/customers/export:
+    get:
+      summary: Export customers to CSV file
+      security: [ { bearerAuth: [] } ]
+      parameters:
+        - in: query
+          name: q
+          schema: { type: string }
+          description: Search in name/email
+        - in: query
+          name: email
+          schema: { type: string }
+        - in: query
+          name: tags
+          schema: { type: string }
+          description: Comma-separated list
+        - in: query
+          name: minSpend
+          schema: { type: number }
+        - in: query
+          name: maxSpend
+          schema: { type: number }
+        - in: query
+          name: dateFrom
+          schema: { type: string, format: date-time }
+        - in: query
+          name: dateTo
+          schema: { type: string, format: date-time }
+        - in: query
+          name: limit
+          schema: { type: integer, minimum: 1, maximum: 5000 }
+          description: Maximum number of customers to export (default all, max 5000)
+      description: |
+        Download customer data as CSV file. Respects all filter parameters from the list endpoint.
+        Useful for backups, migrations, or offline analysis.
+      responses:
+        '200':
+          description: CSV file download
+          content:
+            text/csv:
+              schema:
+                type: string
+                format: binary
+          headers:
+            Content-Disposition:
+              schema:
+                type: string
+                example: 'attachment; filename="customers-2025-11-09.csv"'
   /api/orders:
     post:
       summary: Ingest orders
