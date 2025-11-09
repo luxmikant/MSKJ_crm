@@ -1,0 +1,263 @@
+# Semgrep rules for MSKJ CRM
+# https://semgrep.dev/docs/writing-rules/rule-syntax/
+
+rules:
+  # Security Rules
+  - id: no-hardcoded-secrets
+    patterns:
+      - pattern-either:
+          - pattern: const $VAR = "$SECRET"
+          - pattern: let $VAR = "$SECRET"
+          - pattern: var $VAR = "$SECRET"
+      - metavariable-regex:
+          metavariable: $SECRET
+          regex: (password|secret|token|api[-_]?key|auth[-_]?token)
+    message: Potential hardcoded secret detected. Use environment variables instead.
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: sql-injection-risk
+    patterns:
+      - pattern-either:
+          - pattern: $QUERY.exec($USER_INPUT)
+          - pattern: $QUERY.query($USER_INPUT)
+          - pattern: $DB.raw($USER_INPUT)
+    message: Potential SQL injection vulnerability. Use parameterized queries.
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: nosql-injection-risk
+    patterns:
+      - pattern: |
+          $MODEL.find({ $FIELD: $INPUT })
+      - pattern-not: |
+          $MODEL.find({ $FIELD: String($INPUT) })
+      - pattern-not: |
+          $MODEL.find({ $FIELD: Number($INPUT) })
+    message: Potential NoSQL injection. Sanitize user input before using in queries.
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: eval-usage
+    pattern: eval($X)
+    message: Avoid using eval() as it can execute arbitrary code.
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  # API Security
+  - id: missing-auth-middleware
+    patterns:
+      - pattern: router.$METHOD($PATH, $HANDLER)
+      - pattern-not: router.$METHOD($PATH, requireAuth, ...)
+      - pattern-not: router.$METHOD($PATH, authenticate, ...)
+      - metavariable-regex:
+          metavariable: $PATH
+          regex: ^(?!.*(health|public)).*$
+    message: API route missing authentication middleware. Add requireAuth or similar.
+    languages: [javascript, typescript]
+    severity: WARNING
+    paths:
+      include:
+        - "**/routes/**"
+
+  - id: jwt-without-verification
+    pattern: jwt.decode($TOKEN)
+    message: Use jwt.verify() instead of jwt.decode() to validate tokens.
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  # Input Validation
+  - id: missing-email-validation
+    patterns:
+      - pattern: |
+          $EMAIL = req.body.email
+      - pattern-not-inside: |
+          if (validateEmail($EMAIL)) { ... }
+      - pattern-not-inside: |
+          if ($EMAIL && validateEmail($EMAIL)) { ... }
+    message: Email input from request body should be validated.
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: unvalidated-redirect
+    pattern: res.redirect($URL)
+    message: Validate redirect URLs to prevent open redirect vulnerabilities.
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Error Handling
+  - id: console-log-in-production
+    patterns:
+      - pattern-either:
+          - pattern: console.log(...)
+          - pattern: console.error(...)
+          - pattern: console.warn(...)
+      - pattern-not-inside: |
+          if (process.env.NODE_ENV === 'development') { ... }
+    message: Use logger instead of console.log in production code.
+    languages: [javascript, typescript]
+    severity: INFO
+    paths:
+      include:
+        - "**/src/**"
+      exclude:
+        - "**/test/**"
+        - "**/__tests__/**"
+
+  - id: unhandled-promise-rejection
+    patterns:
+      - pattern: |
+          async function $FUNC(...) {
+            $X
+          }
+      - pattern-not-inside: |
+          try { ... } catch { ... }
+      - pattern-inside: |
+          async function $FUNC(...) {
+            await $Y
+          }
+    message: Async function should have error handling (try-catch or .catch()).
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # MongoDB/Mongoose Best Practices
+  - id: mongoose-connection-without-error-handling
+    patterns:
+      - pattern: mongoose.connect(...)
+      - pattern-not-inside: |
+          try { ... } catch { ... }
+      - pattern-not-inside: |
+          mongoose.connect(...).catch(...)
+    message: MongoDB connection should include error handling.
+    languages: [javascript, typescript]
+    severity: ERROR
+
+  - id: missing-mongoose-index
+    patterns:
+      - pattern: |
+          new mongoose.Schema({
+            ...,
+            email: { type: String, ... },
+            ...
+          })
+      - pattern-not: |
+          new mongoose.Schema({
+            ...,
+            email: { type: String, ..., index: true, ... },
+            ...
+          })
+    message: Consider adding index to frequently queried fields like email.
+    languages: [javascript, typescript]
+    severity: INFO
+
+  # Express Best Practices
+  - id: missing-rate-limiting
+    patterns:
+      - pattern: |
+          app.post($PATH, ...)
+      - pattern-not: |
+          app.post($PATH, rateLimit, ...)
+    message: Consider adding rate limiting to prevent abuse.
+    languages: [javascript, typescript]
+    severity: INFO
+    paths:
+      include:
+        - "**/app.js"
+        - "**/server.js"
+
+  - id: missing-helmet-security
+    patterns:
+      - pattern: |
+          const app = express()
+      - pattern-not-inside: |
+          app.use(helmet())
+    message: Use helmet middleware to set security headers.
+    languages: [javascript, typescript]
+    severity: WARNING
+    paths:
+      include:
+        - "**/app.js"
+        - "**/server.js"
+
+  # React/Frontend Best Practices
+  - id: dangerous-set-inner-html
+    pattern: dangerouslySetInnerHTML={{ __html: $X }}
+    message: Using dangerouslySetInnerHTML can lead to XSS. Sanitize content first.
+    languages: [javascript, typescript, tsx]
+    severity: ERROR
+
+  - id: missing-key-prop
+    patterns:
+      - pattern: |
+          $ARRAY.map(($ITEM) => <$TAG>...</$TAG>)
+      - pattern-not: |
+          $ARRAY.map(($ITEM) => <$TAG key={...}>...</$TAG>)
+    message: Missing 'key' prop in array map. Add unique key for each element.
+    languages: [javascript, typescript, tsx]
+    severity: WARNING
+
+  - id: useeffect-missing-dependencies
+    patterns:
+      - pattern: |
+          useEffect(() => {
+            $BODY
+          }, [])
+      - metavariable-pattern:
+          metavariable: $BODY
+          patterns:
+            - pattern-either:
+                - pattern: $VAR
+                - pattern: $FUNC($VAR)
+    message: useEffect may be missing dependencies. Verify dependency array.
+    languages: [javascript, typescript, tsx]
+    severity: INFO
+
+  # File Upload Security
+  - id: unrestricted-file-upload
+    patterns:
+      - pattern: |
+          multer({ storage: $STORAGE })
+      - pattern-not: |
+          multer({ storage: $STORAGE, limits: { fileSize: ... }, ... })
+    message: File upload should include size limits and file type restrictions.
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: csv-injection-risk
+    patterns:
+      - pattern: |
+          csvContent.includes('=')
+      - pattern-not-inside: |
+          csvContent.replace(/^[=+\-@]/, '')
+    message: Check for CSV injection by sanitizing cells starting with =, +, -, @
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  # Code Quality
+  - id: unused-async
+    patterns:
+      - pattern: |
+          async function $FUNC(...) {
+            $BODY
+          }
+      - pattern-not: |
+          async function $FUNC(...) {
+            await $X
+          }
+    message: Function is declared async but doesn't use await. Remove async or add await.
+    languages: [javascript, typescript]
+    severity: INFO
+
+  - id: equality-type-coercion
+    pattern-either:
+      - pattern: $X == $Y
+      - pattern: $X != $Y
+    message: Use === or !== instead of == or != to avoid type coercion.
+    languages: [javascript, typescript]
+    severity: WARNING
+
+  - id: var-usage
+    pattern: var $X = $Y
+    message: Use 'const' or 'let' instead of 'var' for block scoping.
+    languages: [javascript, typescript]
+    severity: INFO
