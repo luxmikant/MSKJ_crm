@@ -64,6 +64,59 @@ exports.logout = asyncHandler(async (req, res) => {
   res.json({ ok: true });
 });
 
+exports.updateProfile = asyncHandler(async (req, res) => {
+  const { name, bio, phone, preferences } = req.body;
+  const user = await User.findById(req.user._id);
+
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  if (name) user.name = name;
+  if (bio !== undefined) user.bio = bio;
+  if (phone !== undefined) user.phone = phone;
+  if (preferences) {
+    user.preferences = { ...user.preferences, ...preferences };
+  }
+
+  await user.save();
+  
+  // Return updated user without password
+  const updatedUser = user.toObject();
+  delete updatedUser.password;
+  
+  res.json({ user: updatedUser });
+});
+
+exports.changePassword = asyncHandler(async (req, res) => {
+  const { currentPassword, newPassword } = req.body;
+  
+  if (!newPassword || newPassword.length < 6) {
+    return res.status(400).json({ message: 'New password must be at least 6 characters' });
+  }
+
+  const user = await User.findById(req.user._id).select('+password');
+  if (!user) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  // If user has a password, verify current
+  if (user.password) {
+    if (!currentPassword) {
+      return res.status(400).json({ message: 'Current password is required' });
+    }
+    const isMatch = await user.comparePassword(currentPassword);
+    if (!isMatch) {
+      return res.status(400).json({ message: 'Invalid current password' });
+    }
+  }
+
+  user.password = newPassword;
+  await user.save();
+
+  res.json({ message: 'Password updated successfully' });
+});
+
 // Debug endpoint to test auth routes
 exports.debug = asyncHandler(async (req, res) => {
   res.json({ 
