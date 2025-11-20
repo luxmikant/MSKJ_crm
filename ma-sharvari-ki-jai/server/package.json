@@ -8,8 +8,8 @@
     "dev": "nodemon src/index.js",
     "test": "jest",
     "seed": "node src/scripts/seedCustomers.js",
-  "seed:demo": "node src/scripts/seedDemoData.js",
-  "seed:30d": "node src/scripts/seedLast30Days.js"
+    "seed:demo": "node src/scripts/seedDemoData.js",
+    "seed:30d": "node src/scripts/seedLast30Days.js"
   },
   "keywords": [],
   "author": "",
@@ -21,6 +21,7 @@
     "@google/generative-ai": "^0.24.1",
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
+    "csv-parse": "^5.5.6",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-validator": "^7.2.1",
@@ -31,6 +32,7 @@
     "mongodb": "^6.19.0",
     "mongoose": "^8.18.1",
     "morgan": "^1.10.1",
+    "multer": "^1.4.5-lts.1",
     "swagger-ui-express": "^5.0.1",
     "winston": "^3.17.0",
     "yamljs": "^0.3.0"

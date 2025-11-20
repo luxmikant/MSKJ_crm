@@ -15,6 +15,16 @@ Frontend (Static Site):
 - `VITE_API_BASE_URL`: Backend base URL (auto-wired from Render’s service URL via render.yaml)
 - `VITE_GOOGLE_CLIENT_ID`: Google OAuth Client ID
 
+Architecture diagram 
+<img width="2177" height="1781" alt="arch" src="https://github.com/user-attachments/assets/339c0850-4876-4191-b358-a0e2a65ea9fb" />
+
+AI features
+1.AI message suggestions: /api/ai/suggest-message (tone/channel/variables)
+2.Smart segment ideas: /api/segments/ai/generate
+3.Pluggable providers (OpenAI/Gemini via API keys), with graceful fallbacks
+4.UI integration to preview/edit AI output; timeouts and size limits
+5.Responses annotated (e.g., usedAI flag) and errors handled cleanly
+
 ## Deploy on Render
 
 1. Push this repo to GitHub.
